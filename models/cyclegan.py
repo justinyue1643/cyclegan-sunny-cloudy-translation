@@ -2,8 +2,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from generator import Generator
-from discriminator import Discriminator
+from models.generator import Generator
+from models.discriminator import Discriminator
 
 from torchvision.models import vgg11, VGG11_Weights
 '''
@@ -31,6 +31,7 @@ from torchvision.models import vgg11, VGG11_Weights
 '''
 class CycleGAN(nn.Module):
     def __init__(self):
+        super(CycleGAN, self).__init__()
 
         vgg_pretrain = vgg11(VGG11_Weights.DEFAULT)
         self.vgg_pretrain = vgg_pretrain.features[:5].eval() # take only first few layers
@@ -40,10 +41,20 @@ class CycleGAN(nn.Module):
         self.discA = Discriminator()
         self.discB = Discriminator()
 
-
     def forward(self,x):
         pass
 
+    def train(self):
+        self.genA.train()
+        self.genB.train()
+        self.discA.train()
+        self.discB.train()
+
+    def eval(self):
+        self.genA.eval()
+        self.genB.eval()
+        self.discA.eval()
+        self.discB.eval()
 
     def compute_lossA(self,xA):
         '''
@@ -59,22 +70,22 @@ class CycleGAN(nn.Module):
         disA_xA = self.discA(xA)
 
         # GenAdv Loss
-        genB_loss = disB_genB
+        genB_loss = F.binary_cross_entropy(F.sigmoid(disB_genB), torch.ones_like(disB_genB))
 
-        disB_loss = 1-disB_genB
+        disB_loss = F.binary_cross_entropy(F.sigmoid(disB_genB), torch.zeros_like(disB_genB))
 
-        disA_loss = disA_xA
+        disA_loss = F.binary_cross_entropy(F.sigmoid(disA_xA), torch.ones_like(disA_xA))
 
         #cyclic loss
-        cyclic_loss = genA_genB - xA
+        cyclic_loss = F.l1_loss(genA_genB, xA)
 
         #identity loss
-        identity_loss = genB_xA - xA
+        identity_loss = F.l1_loss(genB_xA, xA)
 
         # l2 similarity
-        sim_loss = torch.mean((self.vgg_pretrain(xA) - self.vgg_pretrain(genB_xA))**2)
-
+        sim_loss = F.mse_loss(self.vgg_pretrain(xA), self.vgg_pretrain(genB_xA))
         return genB_loss, disA_loss, disB_loss, cyclic_loss, identity_loss, sim_loss
+
     def compute_lossB(self,xB):
         '''
         : params        xB      image from cloudy dataset distribution
@@ -86,27 +97,26 @@ class CycleGAN(nn.Module):
         genA_xB = self.genA(xB) # converts cloudy to sunny
         disA_genA = self.discA(genA_xB)
         genB_genA = self.genB(genA_xB) # converts sunny back to cloudy
-
         disB_xB = self.discB(xB)
 
         #if disc = 1, then it's real
         #if disc = 0, then it's fake
 
         # GenAdv Loss
-        genA_loss = disA_genA
+        genA_loss = F.binary_cross_entropy(F.sigmoid(disA_genA), torch.ones_like(disA_genA))
 
-        disA_loss = 1-disA_genA
+        disA_loss = F.binary_cross_entropy(F.sigmoid(disA_genA), torch.zeros_like(disA_genA))
 
-        disB_loss = disB_xB
+        disB_loss = F.binary_cross_entropy(F.sigmoid(disB_xB), torch.ones_like(disB_xB))
 
         # Cyclic Loss
-        cyclic_loss = genB_genA - xB
+        cyclic_loss = F.l1_loss(genB_genA, xB)
 
         # Identity Loss
-        identity_loss = genA_xB - xB
+        identity_loss = F.l1_loss(genA_xB, xB)
         
         # l2_similarity loss
-        sim_loss = torch.mean((self.vgg_pretrain(xB) - self.vgg_pretrain(genA_xB))**2)
+        sim_loss = F.mse_loss(self.vgg_pretrain(xB), self.vgg_pretrain(genA_xB))
         return genA_loss, disA_loss, disB_loss, cyclic_loss, identity_loss, sim_loss
 
 

@@ -5,9 +5,10 @@ import torch.nn.functional as F
 
 class Generator(nn.Module):
     def __init__(self):
+        super(Generator, self).__init__()
 
         # Conv-InstanceNorm-LeakyRelu (INPUT)
-        self.conv1 = nn.Conv2d(3,32,kernel_size=3,stride=1)
+        self.conv1 = nn.Conv2d(3,32,kernel_size=3,stride=1, padding="same")
         self.in1   = nn.InstanceNorm2d(32)
         
         #residual blocks
@@ -18,12 +19,12 @@ class Generator(nn.Module):
         self.res4 = ResidualBlock(128,64,5)
         self.res5 = ResidualBlock(64,32,5)
         self.res6 = ResidualBlock(32,3,5)
-        self.seq_res = nn.Sequential([self.res1, self.res2, self.res3, self.res4, self.res5, self.res6])
+        self.seq_res = nn.Sequential(self.res1, self.res2, self.res3, self.res4, self.res5, self.res6)
         # output (BATCH, 3, 256, 256)
         # however, this only gives us weird values, so we want an image that goes from 0->1
 
         # Conv-InstanceNorm-LeakyRelu (OUTPUT)
-        self.conv2 = nn.Conv2d(32,3,kernel_size=3,stride=1)
+        self.conv2 = nn.Conv2d(3,3,kernel_size=3,stride=1, padding="same")
         self.in2   = nn.InstanceNorm2d(3)
         '''
             CycleGan Generator Architecture:
@@ -54,7 +55,7 @@ class Generator(nn.Module):
         out = self.conv2(out)
         out = self.in2(out)
         out = F.leaky_relu(out,0.05)
-        out = nn.Tanh(out)
+        out = F.tanh(out)
         return out
 
 class ResidualBlock(nn.Module):
@@ -62,10 +63,11 @@ class ResidualBlock(nn.Module):
         #### DEFINITION BASED ON SUPPLEMENTARY MATERIAL OF NEURAL TRANSFER PAPER ####
         #############################################################################
         # 3x3 conv ==> Batch Norm ==> Relu twice
-        self.conv1 = nn.Conv2d(in_channels=in_channel, out_channels=out_channel,kernel_size=kernel_size,stride=1)
+        super(ResidualBlock, self).__init__()
+        self.conv1 = nn.Conv2d(in_channels=in_channel, out_channels=out_channel,kernel_size=kernel_size,stride=1, padding="same")
         self.bn1 = nn.BatchNorm2d(out_channel)
         # leaky relu
-        self.conv2 = nn.Conv2d(in_channels=out_channel, out_channels=out_channel,kernel_size=kernel_size,stride=1)
+        self.conv2 = nn.Conv2d(in_channels=out_channel, out_channels=out_channel,kernel_size=kernel_size,stride=1, padding="same")
         self.bn2 = nn.BatchNorm2d(out_channel)
         # another leaky relu
 

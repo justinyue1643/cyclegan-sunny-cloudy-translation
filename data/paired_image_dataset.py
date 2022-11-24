@@ -1,11 +1,12 @@
 from pathlib import Path
 from PIL import Image
-from torch.utils.data import Dataset
+from torch.utils.data import Dataset, DataLoader
 from torchvision import transforms as T
+from tqdm import tqdm
 
 
 class PairedImageDataset(Dataset):
-    def __init__(self, dir, transform=None):
+    def __init__(self, dir):
         self.dir = dir
         if self.dir[-1] != "/":
             self.dir += "/"
@@ -35,11 +36,20 @@ class PairedImageDataset(Dataset):
         return self.transform(sunny_img), self.transform(cloudy_img)
 
     def _load_imgs(self):
-        sunny_dir = Path(self.dir + "sunny")
-        cloudy_dir = Path(self.dir + "cloudy")
+        sunny_dir = Path(self.dir + "/sunny/")
+        cloudy_dir = Path(self.dir + "/cloudy/")
 
         for i in sunny_dir.rglob("*"):
-            sunny_dir.append(str(i.resolve()))
+            self.sunny_imgs.append(str(i.resolve()))
 
         for i in cloudy_dir.rglob("*"):
-            cloudy_dir.append(str(i.resolve()))
+            self.cloudy_imgs.append(str(i.resolve()))
+
+if __name__ == "__main__":
+    data_dir = "~/Documents/cloudy-cycle-gans/data_small"
+    train_dataset = PairedImageDataset("/home/jyue86/Documents/cloudy-cycle-gans/data_small/train")
+    train_loader = DataLoader(train_dataset)
+
+    for s, c in tqdm(train_loader):
+        continue
+    print("done")
