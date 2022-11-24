@@ -5,7 +5,7 @@ from torchvision import transforms as T
 
 
 class PairedImageDataset(Dataset):
-    def __init__(self, dir, transform):
+    def __init__(self, dir, transform=None):
         self.dir = dir
         if self.dir[-1] != "/":
             self.dir += "/"
