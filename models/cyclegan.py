@@ -40,6 +40,8 @@ class CycleGAN(nn.Module):
     def forward(self,x):
         pass
 
+
+    
     def compute_l2loss(self,x):
         '''
         : params
