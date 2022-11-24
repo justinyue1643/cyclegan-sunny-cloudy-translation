@@ -36,21 +36,78 @@ class CycleGAN(nn.Module):
         self.vgg_pretrain = vgg_pretrain.features[:5].eval() # take only first few layers
         self.genA = Generator()
         self.genB = Generator()
-        pass
+        
+        self.discA = Discriminator()
+        self.discB = Discriminator()
+
+
     def forward(self,x):
         pass
 
 
-    
-    def compute_l2loss(self,x):
+    def compute_lossA(self,xA):
         '''
-        : params
+        : params        xA      image from sunny dataset distribution
 
         : notes         MSE loss based on VGG texture from generated image and input image.
                         attempts to preserve the texture when generating an image.
         '''
-        l2 = torch.mean((self.vgg_pretrain(x) - self.vgg_pretrain(self.genA(x)))**2)
-        return l2
+        genB_xA = self.genB(xA)
+        disB_genB = self.discB(genB_xA)
+        genA_genB = self.genA(genB_xA)
+
+        disA_xA = self.discA(xA)
+
+        # GenAdv Loss
+        genB_loss = disB_genB
+
+        disB_loss = 1-disB_genB
+
+        disA_loss = disA_xA
+
+        #cyclic loss
+        cyclic_loss = genA_genB - xA
+
+        #identity loss
+        identity_loss = genB_xA - xA
+
+        # l2 similarity
+        sim_loss = torch.mean((self.vgg_pretrain(xA) - self.vgg_pretrain(genB_xA))**2)
+
+        return genB_loss, disA_loss, disB_loss, cyclic_loss, identity_loss, sim_loss
+    def compute_lossB(self,xB):
+        '''
+        : params        xB      image from cloudy dataset distribution
+
+        : notes         MSE loss based on VGG texture from generated image and input image.
+                        attempts to preserve the texture when generating an image.
+        '''
+        #xB is cloudy
+        genA_xB = self.genA(xB) # converts cloudy to sunny
+        disA_genA = self.discA(genA_xB)
+        genB_genA = self.genB(genA_xB) # converts sunny back to cloudy
+
+        disB_xB = self.discB(xB)
+
+        #if disc = 1, then it's real
+        #if disc = 0, then it's fake
+
+        # GenAdv Loss
+        genA_loss = disA_genA
+
+        disA_loss = 1-disA_genA
+
+        disB_loss = disB_xB
+
+        # Cyclic Loss
+        cyclic_loss = genB_genA - xB
+
+        # Identity Loss
+        identity_loss = genA_xB - xB
+        
+        # l2_similarity loss
+        sim_loss = torch.mean((self.vgg_pretrain(xB) - self.vgg_pretrain(genA_xB))**2)
+        return genA_loss, disA_loss, disB_loss, cyclic_loss, identity_loss, sim_loss
 
 
 #### CONTENT SIMILARITY CODE ####
