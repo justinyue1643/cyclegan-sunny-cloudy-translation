@@ -5,30 +5,15 @@ import torch.nn.functional as F
 
 class Generator(nn.Module):
     def __init__(self):
-        
+        # MISSING 
 
-        ### UPSAMPLING BLOCKS REMOVED BY CLOUD CYCLEGAN ###
-        ###################################################
-        #self.conv1 = nn.Conv2d(in_channels=3,out_channels=32,kernel_size=9,stride=1)
-        #self.bn1 = nn.BatchNorm2d(32)
-        #self.conv2 = nn.Conv2d(in_channels=32,out_channels=64,kernel_size=3,stride=1)
-        #self.bn2 = nn.BatchNorm2d(64)
-        #self.conv3 = nn.Conv2d(in_channels=64,out_channels=128,kernel_size=3,stride=2)
-        #self.bn3 = nn.BatchNorm2d(128)
-        # out of this block returns (BATCH, 32, 128, 128)
-        ###################################################
-
-        ### DOWNSAMPLING BLOCKS REMOVED By CLOUD CYCLEGAN ###
-        #####################################################
-        # not here lmao
-        #####################################################
-
-
+        # Conv-InstanceNorm-LeakyRelu (INPUT)
+        self.conv1 = nn.Conv2d(3,32,kernel_size=3,stride=1)
+        self.in1   = nn.InstanceNorm2d(32)
         
         #residual blocks
-        
-        # input (BATCH, 3, 256, 256)
-        self.res1 = ResidualBlock(3,64,5)
+        # input (BATCH, 32, 256, 256)
+        self.res1 = ResidualBlock(32,64,5)
         self.res2 = ResidualBlock(64,128,5)
         self.res3 = ResidualBlock(128,128,5)
         self.res4 = ResidualBlock(128,64,5)
@@ -38,6 +23,9 @@ class Generator(nn.Module):
         # output (BATCH, 3, 256, 256)
         # however, this only gives us weird values, so we want an image that goes from 0->1
 
+        # Conv-InstanceNorm-LeakyRelu (OUTPUT)
+        self.conv2 = nn.Conv2d(32,3,kernel_size=3,stride=1)
+        self.in2   = nn.InstanceNorm2d(3)
         '''
             CycleGan Generator Architecture:
             --------------------------------
@@ -57,7 +45,18 @@ class Generator(nn.Module):
         '''
 
         #nn.Tanh restricts values from 0->1, which makes it an "image"
-        return nn.Tanh(self.seq_res(x)) 
+
+        out = self.conv1(x)
+        out = self.in1(out)
+        out = F.leaky_relu(out,0.05)
+
+        out = self.seq_res(out)
+
+        out = self.conv2(out)
+        out = self.in2(out)
+        out = F.leaky_relu(out,0.05)
+        out = nn.Tanh(out)
+        return out
 
 class ResidualBlock(nn.Module):
     def __init__(self,in_channel,out_channel,kernel_size):
