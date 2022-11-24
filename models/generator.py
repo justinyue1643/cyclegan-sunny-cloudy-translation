@@ -5,7 +5,6 @@ import torch.nn.functional as F
 
 class Generator(nn.Module):
     def __init__(self):
-        # MISSING 
 
         # Conv-InstanceNorm-LeakyRelu (INPUT)
         self.conv1 = nn.Conv2d(3,32,kernel_size=3,stride=1)
