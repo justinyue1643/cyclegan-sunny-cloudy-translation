@@ -10,7 +10,7 @@ class Generator(nn.Module):
         # Conv-InstanceNorm-LeakyRelu (INPUT)
         self.conv1 = nn.Conv2d(3,32,kernel_size=3,stride=1, padding="same")
         self.in1   = nn.InstanceNorm2d(32)
-        
+
         #residual blocks
         # input (BATCH, 32, 256, 256)
         self.res1 = ResidualBlock(32,64,5)
@@ -55,7 +55,7 @@ class Generator(nn.Module):
         out = self.conv2(out)
         out = self.in2(out)
         out = F.leaky_relu(out,0.05)
-        out = F.tanh(out)
+        out = torch.tanh(out)
         return out
 
 class ResidualBlock(nn.Module):

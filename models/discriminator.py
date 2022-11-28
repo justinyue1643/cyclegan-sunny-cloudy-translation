@@ -27,7 +27,10 @@ class Discriminator(nn.Module):
         """
         batch_size = x.shape[0]
         # NOTE: I don't know what the fuck I'm doing. If anything goes wrong, change this first.
-        return torch.sum(self.model(x).squeeze().reshape(batch_size,-1),dim=1)
+        # return torch.mean(self.model(x).squeeze().reshape(batch_size,-1),dim=1)
+        # return torch.mean(self.model(x), dim=(1, 2, 3))
+        output = self.model(x)
+        return F.avg_pool2d(output, output.size()[2:]).squeeze()
 
 class PatchGANBlock(nn.Module):
     def __init__(self, input_channels, output_channels):

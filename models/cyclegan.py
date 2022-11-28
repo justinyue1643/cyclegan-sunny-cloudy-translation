@@ -37,7 +37,7 @@ class CycleGAN(nn.Module):
         self.vgg_pretrain = vgg_pretrain.features[:5].eval() # take only first few layers
         self.genA = Generator()
         self.genB = Generator()
-        
+
         self.discA = Discriminator()
         self.discB = Discriminator()
 
@@ -70,11 +70,11 @@ class CycleGAN(nn.Module):
         disA_xA = self.discA(xA)
 
         # GenAdv Loss
-        genB_loss = F.binary_cross_entropy(F.sigmoid(disB_genB), torch.ones_like(disB_genB))
+        genB_loss = F.mse_loss(disB_genB, torch.ones_like(disB_genB)) # -torch.mean(F.logsigmoid(disB_genB))
 
-        disB_loss = F.binary_cross_entropy(F.sigmoid(disB_genB), torch.zeros_like(disB_genB))
+        disB_loss = F.mse_loss(disB_genB, torch.zeros_like(disB_genB)) # -torch.mean(F.logsigmoid(1 - disB_genB))
 
-        disA_loss = F.binary_cross_entropy(F.sigmoid(disA_xA), torch.ones_like(disA_xA))
+        disA_loss = F.mse_loss(disA_xA, torch.ones_like(disA_xA)) # -torch.mean(F.logsigmoid(disA_xA))
 
         #cyclic loss
         cyclic_loss = F.l1_loss(genA_genB, xA)
@@ -103,18 +103,18 @@ class CycleGAN(nn.Module):
         #if disc = 0, then it's fake
 
         # GenAdv Loss
-        genA_loss = F.binary_cross_entropy(F.sigmoid(disA_genA), torch.ones_like(disA_genA))
+        genA_loss = F.mse_loss(disA_genA, torch.ones_like(disA_genA)) # -torch.mean(F.logsigmoid(disA_genA))
 
-        disA_loss = F.binary_cross_entropy(F.sigmoid(disA_genA), torch.zeros_like(disA_genA))
+        disA_loss =  F.mse_loss(disA_genA, torch.zeros_like(disA_genA)) # -torch.mean(F.logsigmoid(1 - disA_genA))
 
-        disB_loss = F.binary_cross_entropy(F.sigmoid(disB_xB), torch.ones_like(disB_xB))
+        disB_loss = F.mse_loss(disB_xB, torch.ones_like(disB_xB)) # -torch.mean(F.logsigmoid(disB_xB))
 
         # Cyclic Loss
         cyclic_loss = F.l1_loss(genB_genA, xB)
 
         # Identity Loss
         identity_loss = F.l1_loss(genA_xB, xB)
-        
+
         # l2_similarity loss
         sim_loss = F.mse_loss(self.vgg_pretrain(xB), self.vgg_pretrain(genA_xB))
         return genA_loss, disA_loss, disB_loss, cyclic_loss, identity_loss, sim_loss
