@@ -41,8 +41,12 @@ class CycleGAN(nn.Module):
         self.discA = Discriminator()
         self.discB = Discriminator()
 
-    def forward(self,x):
-        pass
+    def forward(self,x, convertToCloud=False):
+        if convertToCloud:
+            img = self.genB(x)
+        else:
+            img = self.genA(x)
+        return img
 
     def train(self):
         self.genA.train()
