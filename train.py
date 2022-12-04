@@ -17,15 +17,15 @@ from tqdm import tqdm
 def train():
     # Constants
     device = "cuda" if torch.cuda.is_available() else "cpu"
-    EPOCHS = 10
-    LAMBDA = 0.5
+    EPOCHS = 20
+    LAMBDA = 0.3 # 0.1 # 0.5
 
     # Datasets
     # train_dataset = PairedImageDataset("/home/jyue86/Documents/cloudy-cycle-gans/data_small/train")
     # valid_dataset = PairedImageDataset("/home/jyue86/Documents/cloudy-cycle-gans/data_small/val")
     train_dataset = PairedImageDataset("/content/drive/MyDrive/data_small/train")
     valid_dataset = PairedImageDataset("/content/drive/MyDrive/data_small/val")
-    train_loader = DataLoader(train_dataset, batch_size=8)
+    train_loader = DataLoader(train_dataset, batch_size=8, shuffle=True)
     valid_loader = DataLoader(valid_dataset, batch_size=8)
 
     # Models
@@ -54,7 +54,7 @@ def train():
     }
     start_epoch = 0
 
-    checkpoint_path_str = "/content/drive/MyDrive/cyclegan/checkpoint_29.pt"
+    checkpoint_path_str = "/content/drive/MyDrive/cyclegan/checkpoint_49.pt"
     if Path(checkpoint_path_str).exists():
         checkpoint = torch.load(checkpoint_path_str)
         start_epoch = checkpoint["epoch"] + 1
@@ -86,8 +86,8 @@ def train():
             genA_loss, disA_loss2, disB_loss2, cyclic_loss2, identity_loss2, sim_loss2 = model.compute_lossB(cloudy_img)
 
             # Backpropogate genA
-            gen_loss = genA_loss + genB_loss + (identity_loss1 + identity_loss2) + (
-                    cyclic_loss1 + cyclic_loss2) * LAMBDA
+            gen_loss = genA_loss + genB_loss + (identity_loss1 + identity_loss2) * LAMBDA + (
+                    cyclic_loss1 + cyclic_loss2)
             gen_loss.backward(retain_graph=True)
 
             # Backpropogate discA
